@@ -54,24 +54,24 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | — | Pending |
-| CORE-02 | — | Pending |
-| CORE-03 | — | Pending |
-| CORE-04 | — | Pending |
-| CORE-05 | — | Pending |
-| ERR-01 | — | Pending |
-| ERR-02 | — | Pending |
-| ERR-03 | — | Pending |
-| ERR-04 | — | Pending |
-| INFRA-01 | — | Pending |
-| INFRA-02 | — | Pending |
-| INFRA-03 | — | Pending |
+| CORE-01 | Phase 3 | Pending |
+| CORE-02 | Phase 2 | Pending |
+| CORE-03 | Phase 3 | Pending |
+| CORE-04 | Phase 2 | Pending |
+| CORE-05 | Phase 3 | Pending |
+| ERR-01 | Phase 2 | Pending |
+| ERR-02 | Phase 2 | Pending |
+| ERR-03 | Phase 2 | Pending |
+| ERR-04 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 12 total
-- Mapped to phases: 0
-- Unmapped: 12 ⚠️
+- Mapped to phases: 12
+- Unmapped: 0 ✅
 
 ---
 *Requirements defined: 2025-07-06*
-*Last updated: 2025-07-06 after initial definition*
+*Last updated: 2026-07-06 after roadmap creation*
