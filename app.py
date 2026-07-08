@@ -27,6 +27,7 @@ from pathlib import Path
 
 import yt_dlp
 from flask import Flask, Response, jsonify, request, send_file
+from werkzeug.exceptions import HTTPException
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -311,6 +312,19 @@ def _handle_app_error(exc: AppError):
     if exc.details:
         payload["details"] = exc.details
     return jsonify(payload), exc.status_code
+
+
+@app.errorhandler(HTTPException)
+def _handle_http_exception(exc: HTTPException):
+    """Catch-all for Flask/Werkzeug HTTP exceptions (405, 413, etc.).
+
+    Flask defaults to HTML for these; this handler ensures JSON output.
+    """
+    return jsonify(
+        error=exc.name,
+        message=str(exc.description) if hasattr(exc, "description") else str(exc),
+        status=exc.code,
+    ), exc.code
 
 
 # ===================================================================
