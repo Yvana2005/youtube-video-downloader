@@ -23,10 +23,11 @@ import tempfile
 import threading
 import time
 import typing
+import uuid
 from pathlib import Path
 
 import yt_dlp
-from flask import Flask, Response, jsonify, request, send_file
+from flask import Flask, Response, jsonify, render_template, request, send_file
 from werkzeug.exceptions import HTTPException
 
 # ---------------------------------------------------------------------------
@@ -35,6 +36,156 @@ from werkzeug.exceptions import HTTPException
 TEMP_TTL_SECONDS = 600            # 10 minutes before cleanup (D-07)
 CLEANUP_INTERVAL_SECONDS = 300    # sweep every 5 minutes
 CHUNK_SIZE = 8192                 # streaming chunk size (D-05)
+DOWNLOAD_TIMEOUT = 1800           # max seconds before background download is aborted
+
+# ---------------------------------------------------------------------------
+# Download Progress State
+# ---------------------------------------------------------------------------
+_download_tasks: dict[str, dict] = {}
+_downloads_lock = threading.Lock()
+
+
+class _DownloadState:
+    """Factory for initial download task state dicts."""
+
+    @staticmethod
+    def initial() -> dict:
+        return {
+            "status": "queued",          # queued | downloading | completed | error
+            "percent": 0.0,
+            "speed": None,               # bytes/sec
+            "eta": None,                 # seconds
+            "downloaded_bytes": 0,
+            "total_bytes": None,
+            "file_path": None,
+            "filename": None,
+            "error_message": None,
+        }
+
+
+def _make_progress_hook(download_id: str):
+    """Return a progress_hooks closure for yt-dlp that updates _download_tasks."""
+    def _hook(d: dict) -> None:
+        with _downloads_lock:
+            try:
+                state = _download_tasks.get(download_id)
+                if state is None:
+                    return
+                status = d.get("status", "")
+                downloaded = d.get("downloaded_bytes", 0) or 0
+                total = d.get("total_bytes") or d.get("total_bytes_estimate")
+                speed = d.get("speed")
+                eta = d.get("eta")
+                filename = d.get("filename")
+
+                state["downloaded_bytes"] = downloaded
+                state["speed"] = speed
+                state["eta"] = eta
+
+                if total:
+                    state["total_bytes"] = total
+                    if total > 0:
+                        state["percent"] = min(downloaded / total * 100.0, 100.0)
+
+                if filename:
+                    state["filename"] = filename
+
+                if status == "finished":
+                    state["status"] = "completed"
+                    state["percent"] = 100.0
+                    state["eta"] = 0
+            finally:
+                pass  # lock released by context manager
+
+    return _hook
+
+
+def _background_download(download_id: str, url: str, format_id: str) -> None:
+    """Run yt-dlp download in a background thread with progress tracking."""
+    try:
+        with _downloads_lock:
+            if download_id in _download_tasks:
+                _download_tasks[download_id]["status"] = "downloading"
+
+        temp_dir = create_temp_dir()
+
+        # Fetch info to validate format_id
+        with yt_dlp.YoutubeDL(_base_ydl_opts()) as ydl:
+            info = ydl.extract_info(url, download=False)
+
+        available_ids = {f.get("format_id") for f in info.get("formats", [])}
+        if format_id not in available_ids:
+            with _downloads_lock:
+                if download_id in _download_tasks:
+                    _download_tasks[download_id].update(
+                        status="error",
+                        error_message=f"Invalid format_id: {format_id!r}. Available formats: {', '.join(sorted(available_ids, key=lambda x: (x.isdigit(), x)))}",
+                    )
+            return
+
+        selected = next(
+            (f for f in info.get("formats", []) if f.get("format_id") == format_id),
+            {},
+        )
+        ext = selected.get("ext", "mp4")
+
+        opts = _download_opts(temp_dir, format_id)
+        opts["progress_hooks"] = [_make_progress_hook(download_id)]
+
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.download([url])
+
+        # Find downloaded file
+        downloaded = list(temp_dir.glob("*"))
+        if not downloaded:
+            with _downloads_lock:
+                if download_id in _download_tasks:
+                    _download_tasks[download_id].update(
+                        status="error",
+                        error_message="Download completed but output file not found.",
+                    )
+            return
+
+        download_path = str(downloaded[0])
+        title = info.get("title", info.get("id", "video"))
+        safe_filename = re.sub(r"[^\w\s.-]", "", f"{title}.{ext}")
+
+        with _downloads_lock:
+            if download_id in _download_tasks:
+                _download_tasks[download_id].update(
+                    status="completed",
+                    percent=100.0,
+                    file_path=download_path,
+                    filename=safe_filename,
+                    eta=0,
+                )
+
+    except yt_dlp.utils.DownloadError as exc:
+        cause = getattr(exc, "cause", exc)
+        app_error = _map_ytdlp_error(
+            cause if isinstance(cause, yt_dlp.utils.ExtractorError) else exc
+        )
+        with _downloads_lock:
+            if download_id in _download_tasks:
+                _download_tasks[download_id].update(
+                    status="error", error_message=app_error.message
+                )
+    except yt_dlp.utils.ExtractorError as exc:
+        app_error = _map_ytdlp_error(exc)
+        with _downloads_lock:
+            if download_id in _download_tasks:
+                _download_tasks[download_id].update(
+                    status="error", error_message=app_error.message
+                )
+    except Exception as exc:
+        log.exception("Unexpected error in background download %s", download_id)
+        with _downloads_lock:
+            if download_id in _download_tasks:
+                _download_tasks[download_id].update(
+                    status="error",
+                    error_message="An unexpected error occurred during download. Please try again.",
+                )
+
 
 # ---------------------------------------------------------------------------
 # App Initialization
@@ -332,10 +483,19 @@ def _handle_http_exception(exc: HTTPException):
 # ===================================================================
 
 
-@app.route("/", methods=["GET"])
+@app.route("/health", methods=["GET"])
 def health():
-    """Health-check / placeholder landing page."""
+    """Health-check endpoint returning service status JSON."""
     return jsonify(service="YouTube Video Downloader", status="running", version="1.0.0")
+
+
+@app.route("/", methods=["GET"])
+def index():
+    """Serve the single-page frontend application."""
+    try:
+        return render_template("index.html")
+    except Exception:
+        return jsonify(service="YouTube Video Downloader", status="running", version="1.0.0")
 
 
 # ===================================================================
@@ -524,6 +684,148 @@ def download_video():
         raise AppError(
             "An unexpected error occurred during download. Please try again.", 500
         ) from exc
+
+
+# ===================================================================
+# Task 3 — POST /download/start (Async Background Download)
+# ===================================================================
+
+
+@app.route("/download/start", methods=["POST"])
+def download_start():
+    """Start an async background download and return a download_id for progress tracking.
+
+    Request:  ``{"url": "...", "format_id": "..."}``
+    Response: ``{"download_id": "uuid4"}`` with status 202.
+    """
+    data = request.get_json(silent=True)
+    if not data or "url" not in data:
+        raise AppError("Missing required field: url", 400)
+
+    url = data["url"].strip()
+    format_id = (data.get("format_id") or "").strip()
+
+    if not is_valid_youtube_url(url):
+        raise AppError(
+            "Invalid YouTube URL. Must be a youtube.com/watch?v=… or youtu.be/… link.",
+            400,
+        )
+
+    if not format_id:
+        raise AppError("Missing required field: format_id", 400)
+
+    # Validate format_id against video info
+    try:
+        with yt_dlp.YoutubeDL(_base_ydl_opts()) as ydl:
+            info = ydl.extract_info(url, download=False)
+    except yt_dlp.utils.DownloadError as exc:
+        cause = getattr(exc, "cause", exc)
+        raise _map_ytdlp_error(
+            cause if isinstance(cause, yt_dlp.utils.ExtractorError) else exc
+        ) from exc
+    except yt_dlp.utils.ExtractorError as exc:
+        raise _map_ytdlp_error(exc) from exc
+    except Exception as exc:
+        log.exception("Unexpected error fetching info for /download/start")
+        raise AppError(
+            "An unexpected error occurred while fetching video information.", 500
+        ) from exc
+
+    available_ids = {f.get("format_id") for f in info.get("formats", [])}
+    if format_id not in available_ids:
+        raise AppError(
+            f"Invalid format_id: {format_id!r}. "
+            f"Available formats: {', '.join(sorted(available_ids, key=lambda x: (x.isdigit(), x)))}",
+            400,
+        )
+
+    download_id = str(uuid.uuid4())
+
+    with _downloads_lock:
+        _download_tasks[download_id] = _DownloadState.initial()
+
+    thread = threading.Thread(
+        target=_background_download,
+        args=(download_id, url, format_id),
+        daemon=True,
+    )
+    thread.start()
+
+    return jsonify({"download_id": download_id}), 202
+
+
+# ===================================================================
+# Task 4 — GET /download/progress/<download_id>
+# ===================================================================
+
+
+@app.route("/download/progress/<download_id>", methods=["GET"])
+def download_progress(download_id: str):
+    """Return current progress for a background download task.
+
+    Response: JSON with status, percent, speed, eta, downloaded_bytes, total_bytes.
+    """
+    with _downloads_lock:
+        state = _download_tasks.get(download_id)
+
+    if state is None:
+        return jsonify({"error": "Download not found", "status": 404}), 404
+
+    # Return a safe subset of state (exclude internal fields like file_path)
+    result = {
+        "status": state["status"],
+        "percent": round(state["percent"], 1),
+        "speed": int(state["speed"]) if state["speed"] is not None else None,
+        "eta": int(state["eta"]) if state["eta"] is not None else None,
+        "downloaded_bytes": state["downloaded_bytes"],
+        "total_bytes": state["total_bytes"],
+    }
+
+    if state["status"] == "error" and state["error_message"]:
+        result["error_message"] = state["error_message"]
+
+    if state["status"] == "completed":
+        result["filename"] = state["filename"]
+
+    return jsonify(result)
+
+
+# ===================================================================
+# Task 5 — GET /download/result/<download_id>
+# ===================================================================
+
+
+@app.route("/download/result/<download_id>", methods=["GET"])
+def download_result(download_id: str):
+    """Stream the completed download file to the browser.
+
+    Response: Streaming file attachment (same pattern as POST /download).
+    """
+    with _downloads_lock:
+        state = _download_tasks.get(download_id)
+
+    if state is None:
+        return jsonify({"error": "Download not found", "status": 404}), 404
+
+    if state["status"] != "completed":
+        return jsonify({"error": "Download not yet complete", "status": 400}), 400
+
+    file_path = state["file_path"]
+    filename = state["filename"] or "video.mp4"
+
+    def _generate() -> typing.Generator[bytes, None, None]:
+        with open(file_path, "rb") as fh:
+            while True:
+                chunk = fh.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                yield chunk
+
+    return Response(
+        _generate(),
+        mimetype="video/mp4",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ===================================================================
