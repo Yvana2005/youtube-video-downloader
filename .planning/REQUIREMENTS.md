@@ -9,11 +9,11 @@ Requirements for initial release.
 
 ### Core Download Flow
 
-- [ ] **CORE-01**: User can paste a YouTube URL into an input field
+- [x] **CORE-01**: User can paste a YouTube URL into an input field
 - [x] **CORE-02**: System fetches and displays available video formats and qualities for the URL
-- [ ] **CORE-03**: User can select a format/quality and initiate download
+- [x] **CORE-03**: User can select a format/quality and initiate download
 - [x] **CORE-04**: Selected video is downloaded and sent to the user's browser as a file
-- [ ] **CORE-05**: System shows download progress feedback to the user
+- [x] **CORE-05**: System shows download progress feedback to the user
 
 ### Error Handling
 
@@ -54,11 +54,11 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 3 | Pending |
+| CORE-01 | Phase 3 | Complete |
 | CORE-02 | Phase 2 | Complete |
-| CORE-03 | Phase 3 | Pending |
+| CORE-03 | Phase 3 | Complete |
 | CORE-04 | Phase 2 | Complete |
-| CORE-05 | Phase 3 | Pending |
+| CORE-05 | Phase 3 | Complete |
 | ERR-01 | Phase 2 | Complete |
 | ERR-02 | Phase 2 | Complete |
 | ERR-03 | Phase 2 | Complete |
