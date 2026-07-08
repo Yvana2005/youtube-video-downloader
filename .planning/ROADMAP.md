@@ -7,7 +7,7 @@ A single-purpose web application that lets users download YouTube videos by past
 ## Phases
 
 - [ ] **Phase 1: Foundation & Infrastructure** - Flask skeleton, yt-dlp auto-update, temp file management, streaming architecture, security guardrails
-- [ ] **Phase 2: Core Backend API** - Video metadata fetching, format listing, download streaming, error detection and response
+- [x] **Phase 2: Core Backend API** - Video metadata fetching, format listing, download streaming, error detection and response
 - [ ] **Phase 3: Frontend User Interface** - URL input, video preview, format selection, download with progress, error display
 
 ## Phase Details
@@ -36,7 +36,7 @@ A single-purpose web application that lets users download YouTube videos by past
   5. Server errors (yt-dlp failure, ffmpeg missing, rate limiting) return human-readable JSON error responses
 **Plans**: 1 plan
 Plans:
-- [ ] 02-01-PLAN.md — Implement /info and /download endpoints with error handling
+- [x] 02-01-PLAN.md — Implement /info and /download endpoints with error handling
 
 ### Phase 3: Frontend User Interface
 **Goal**: Users can interact with the downloader through a clean, responsive web interface — paste a URL, preview video info, select quality, download with real-time progress feedback, and see clear error messages.
@@ -56,5 +56,5 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Infrastructure | 0/0 | Not started | - |
-| 2. Core Backend API | 0/0 | Not started | - |
+| 2. Core Backend API | 1/1 | Complete | 2026-07-08 |
 | 3. Frontend User Interface | 0/0 | Not started | - |

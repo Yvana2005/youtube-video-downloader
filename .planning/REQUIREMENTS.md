@@ -10,16 +10,16 @@ Requirements for initial release.
 ### Core Download Flow
 
 - [ ] **CORE-01**: User can paste a YouTube URL into an input field
-- [ ] **CORE-02**: System fetches and displays available video formats and qualities for the URL
+- [x] **CORE-02**: System fetches and displays available video formats and qualities for the URL
 - [ ] **CORE-03**: User can select a format/quality and initiate download
-- [ ] **CORE-04**: Selected video is downloaded and sent to the user's browser as a file
+- [x] **CORE-04**: Selected video is downloaded and sent to the user's browser as a file
 - [ ] **CORE-05**: System shows download progress feedback to the user
 
 ### Error Handling
 
-- [ ] **ERR-01**: Invalid YouTube URLs show a clear error message
-- [ ] **ERR-02**: Unavailable/deleted videos show a clear error message
-- [ ] **ERR-03**: Server errors (yt-dlp failure, ffmpeg missing) show a human-readable error
+- [x] **ERR-01**: Invalid YouTube URLs show a clear error message
+- [x] **ERR-02**: Unavailable/deleted videos show a clear error message
+- [x] **ERR-03**: Server errors (yt-dlp failure, ffmpeg missing) show a human-readable error
 - [ ] **ERR-04**: Large file downloads handle streaming without memory exhaustion
 
 ### Infrastructure
@@ -55,19 +55,20 @@ Deferred to future release.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CORE-01 | Phase 3 | Pending |
-| CORE-02 | Phase 2 | Pending |
+| CORE-02 | Phase 2 | Complete |
 | CORE-03 | Phase 3 | Pending |
-| CORE-04 | Phase 2 | Pending |
+| CORE-04 | Phase 2 | Complete |
 | CORE-05 | Phase 3 | Pending |
-| ERR-01 | Phase 2 | Pending |
-| ERR-02 | Phase 2 | Pending |
-| ERR-03 | Phase 2 | Pending |
+| ERR-01 | Phase 2 | Complete |
+| ERR-02 | Phase 2 | Complete |
+| ERR-03 | Phase 2 | Complete |
 | ERR-04 | Phase 1 | Pending |
 | INFRA-01 | Phase 1 | Pending |
 | INFRA-02 | Phase 1 | Pending |
 | INFRA-03 | Phase 1 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 12 total
 - Mapped to phases: 12
 - Unmapped: 0 ✅

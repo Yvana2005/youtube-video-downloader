@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 1
-current_phase_name: Foundation & Infrastructure
-status: planned
+current_phase: 02
+current_phase_name: core-backend-api
+status: verifying
 stopped_at: Phase 1 planning complete
-last_updated: "2026-07-06T16:20:00.000Z"
-last_activity: 2026-07-06
-last_activity_desc: Phase 1 plan created and verified
+last_updated: "2026-07-08T10:22:36.625Z"
+last_activity: 2026-07-08
+last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 3
-  completed_phases: 0
-  total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -24,37 +24,35 @@ progress:
 See: .planning/PROJECT.md (updated 2025-07-06)
 
 **Core value:** User can paste a YouTube link and download the video file in their chosen format.
-**Current focus:** Phase 1: Foundation & Infrastructure
+**Current focus:** Phase 02 — core-backend-api
 
 ## Current Position
 
-Phase: 1 of 3 (Foundation & Infrastructure)
-Plan: 1 of 1 (Planned)
-Status: Ready to execute
-Last activity: 2026-07-06 — Phase 1 plan created and verified
+Phase: 02 (core-backend-api) — COMPLETE
+Plan: 1 of 1
+Status: Phase 2 complete — ready for verification
+Last activity: 2026-07-08 — Implemented /info and /download endpoints with error handling
 
-Progress: [█░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: —
+- Total plans completed: 1
+- Average duration: 5 min
+- Total execution time: 5 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| — | — | — | — |
+| 02-core-backend-api | 1 | 5 min | 5 min |
 
 **Recent Trend:**
 
-- Last 5 plans: —
-- Trend: —
-
-*Updated after each plan completion*
+- Last 5 plans: Phase 2 Plan 01
+- Trend: 5 min / plan
 
 ## Accumulated Context
 
@@ -63,7 +61,9 @@ Progress: [█░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Pending]: Finalize download architecture decision (server-side vs browser-side fetching for datacenter IP workaround) during Phase 1 planning
+- [x] Single app.py structure for MVP (D-01) — no blueprints/packages until needed
+- [x] Streaming via generator with Response() and CHUNK_SIZE=8192 — Flask 3.x send_file does not accept chunksize
+- [x] HTTPException catch-all converts Flask default HTML errors to structured JSON
 - [Pending]: Decide on Deno vs Node upgrade for yt-dlp JS runtime requirement
 
 ### Pending Todos
@@ -84,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-06T16:20:00.000Z
-Stopped at: Phase 1 planning complete
-Resume file: .planning/phases/01-foundation-infrastructure/01-PLAN.md
+Last session: 2026-07-08T11:21:22+0100
+Stopped at: Completed 02-01-PLAN.md — Phase 2 ready for verification
+Resume file: .planning/phases/02-core-backend-api/02-01-PLAN.md
