@@ -34,7 +34,9 @@ A single-purpose web application that lets users download YouTube videos by past
   3. POST requests with invalid YouTube URLs return structured JSON error responses (not HTML or stack traces)
   4. POST requests with unavailable/deleted video IDs return structured JSON error responses indicating the video is unavailable
   5. Server errors (yt-dlp failure, ffmpeg missing, rate limiting) return human-readable JSON error responses
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 02-01-PLAN.md — Implement /info and /download endpoints with error handling
 
 ### Phase 3: Frontend User Interface
 **Goal**: Users can interact with the downloader through a clean, responsive web interface — paste a URL, preview video info, select quality, download with real-time progress feedback, and see clear error messages.
