@@ -43,12 +43,14 @@ Plans:
 **Depends on**: Phase 2
 **Requirements**: CORE-01, CORE-03, CORE-05
 **Success Criteria** (what must be TRUE):
-  1. User can paste a YouTube URL into the input field and see the video's title, thumbnail, and duration appear automatically
-  2. User can select from available format/quality options (displayed with resolution and file size)
-  3. User can click a Download button and receive the selected video file
-  4. Download progress is shown in real-time with percentage complete, download speed, and estimated time remaining
-  5. Invalid URLs and unavailable videos display clear, user-friendly error messages in the UI
-**Plans**: TBD
+   1. User can paste a YouTube URL into the input field and see the video's title, thumbnail, and duration appear automatically
+   2. User can select from available format/quality options (displayed with resolution and file size)
+   3. User can click a Download button and receive the selected video file
+   4. Download progress is shown in real-time with percentage complete, download speed, and estimated time remaining
+   5. Invalid URLs and unavailable videos display clear, user-friendly error messages in the UI
+**Plans**: 1 plan
+Plans:
+- [ ] 03-01-PLAN.md — Frontend UI with video preview, format selection, download progress, and error display
 **UI hint**: yes
 
 ## Progress
@@ -57,4 +59,4 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation & Infrastructure | 0/0 | Not started | - |
 | 2. Core Backend API | 1/1 | Complete | 2026-07-08 |
-| 3. Frontend User Interface | 0/0 | Not started | - |
+| 3. Frontend User Interface | 0/1 | Ready for execution | - |
