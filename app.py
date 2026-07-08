@@ -31,6 +31,28 @@ from flask import Flask, Response, jsonify, render_template, request, send_file
 from werkzeug.exceptions import HTTPException
 
 # ---------------------------------------------------------------------------
+# PyInstaller frozen mode support
+# ---------------------------------------------------------------------------
+def _get_app_base_path() -> Path:
+    """Return the base path of the app (works for both frozen and dev modes)."""
+    if getattr(sys, "frozen", False):
+        # PyInstaller: sys._MEIPASS is the temp extraction dir
+        return Path(sys._MEIPASS)
+    return Path(__file__).parent
+
+
+def _is_frozen() -> bool:
+    """Check if running as a PyInstaller bundle."""
+    return getattr(sys, "frozen", False)
+
+
+def _get_template_folder() -> str:
+    """Return the correct template folder path for Flask."""
+    if _is_frozen():
+        return str(_get_app_base_path() / "templates")
+    return "templates"
+
+# ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 TEMP_TTL_SECONDS = 600            # 10 minutes before cleanup (D-07)
@@ -190,7 +212,7 @@ def _background_download(download_id: str, url: str, format_id: str) -> None:
 # ---------------------------------------------------------------------------
 # App Initialization
 # ---------------------------------------------------------------------------
-app = Flask(__name__)
+app = Flask(__name__, template_folder=_get_template_folder())
 
 logging.basicConfig(
     level=logging.INFO,
@@ -849,5 +871,12 @@ def startup() -> None:
 
 
 if __name__ == "__main__":
+    # When frozen (PyInstaller), disable debug mode and reloader
+    is_frozen = _is_frozen()
+    if is_frozen:
+        log.info("Running in frozen mode (PyInstaller bundle)")
+    else:
+        log.info("Running in development mode")
+
     startup()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)

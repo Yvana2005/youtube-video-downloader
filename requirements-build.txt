@@ -1,0 +1,7 @@
+# Build dependencies for creating the .exe (Windows only)
+# Install with: pip install -r requirements-build.txt
+
+pyinstaller>=5.0.0
+
+# Optional: UPX for smaller binaries (also needs upx.exe on PATH)
+# upx-runtime is bundled by PyInstaller when available
