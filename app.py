@@ -22,10 +22,11 @@ import sys
 import tempfile
 import threading
 import time
+import typing
 from pathlib import Path
 
 import yt_dlp
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, Response, jsonify, request, send_file
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -410,6 +411,105 @@ def get_info():
             "url": url,
         }
     )
+
+
+# ===================================================================
+# Task 2 — POST /download
+# ===================================================================
+
+
+@app.route("/download", methods=["POST"])
+def download_video():
+    """Download a video in the requested format and stream the file (Task 2).
+
+    Request:  ``{"url": "https://www.youtube.com/watch?v=VIDEO_ID", "format_id": "18"}``
+    Response: Streaming MP4 file attachment.
+    """
+    data = request.get_json(silent=True)
+    if not data or "url" not in data:
+        raise AppError("Missing required field: url", 400)
+
+    url = data["url"].strip()
+    format_id = (data.get("format_id") or "").strip()
+
+    # ---- validate ------------------------------------------------
+    if not is_valid_youtube_url(url):
+        raise AppError(
+            "Invalid YouTube URL. Must be a youtube.com/watch?v=… or youtu.be/… link.",
+            400,
+        )
+
+    if not format_id:
+        raise AppError("Missing required field: format_id", 400)
+
+    # ---- fetch info to validate format_id (T-02-02) --------------
+    temp_dir = create_temp_dir()  # D-06
+
+    try:
+        with yt_dlp.YoutubeDL(_base_ydl_opts()) as ydl:
+            info = ydl.extract_info(url, download=False)
+
+        available_ids = {f.get("format_id") for f in info.get("formats", [])}
+        if format_id not in available_ids:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise AppError(
+                f"Invalid format_id: {format_id!r}. "
+                f"Available formats: {', '.join(sorted(available_ids, key=lambda x: (x.isdigit(), x)))}",  # noqa: B907
+                400,
+            )
+
+        # ---- download the selected format --------------------------
+        selected = next(
+            (f for f in info.get("formats", []) if f.get("format_id") == format_id),
+            {},
+        )
+        ext = selected.get("ext", "mp4")
+
+        opts = _download_opts(temp_dir, format_id)
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.download([url])
+
+        downloaded = list(temp_dir.glob("*"))
+        if not downloaded:
+            raise AppError("Download completed but output file not found.", 500)
+
+        download_path = str(downloaded[0])
+        title = info.get("title", info.get("id", "video"))
+        safe_filename = re.sub(r"[^\w\s.-]", "", f"{title}.{ext}")
+
+        def _generate() -> typing.Generator[bytes, None, None]:
+            """Stream the file in CHUNK_SIZE pieces (D-05)."""
+            with open(download_path, "rb") as fh:
+                while True:
+                    chunk = fh.read(CHUNK_SIZE)  # D-05
+                    if not chunk:
+                        break
+                    yield chunk
+
+        return Response(
+            _generate(),
+            mimetype="video/mp4",
+            headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'},
+        )
+
+    except yt_dlp.utils.DownloadError as exc:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        cause = getattr(exc, "cause", exc)
+        raise _map_ytdlp_error(
+            cause if isinstance(cause, yt_dlp.utils.ExtractorError) else exc
+        ) from exc
+    except yt_dlp.utils.ExtractorError as exc:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise _map_ytdlp_error(exc) from exc
+    except AppError:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise
+    except Exception as exc:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        log.exception("Unexpected error downloading %s", url)
+        raise AppError(
+            "An unexpected error occurred during download. Please try again.", 500
+        ) from exc
 
 
 # ===================================================================
