@@ -75,10 +75,18 @@ Plans:
 
 ### Phase 4: GitHub Repository Setup & Code Push
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal**: Create a public GitHub repository `youtube-video-downloader` using the user's GitHub token, push the app code + planning artifacts, add README/LICENSE (MIT), configure a basic CI workflow, and store the token as a GitHub Actions secret.
 **Depends on:** Phase 3
-**Plans:** 0 plans
+**Requirements**: (see 04-SPEC.md)
+**Success Criteria** (what must be TRUE):
+
+    1. A public GitHub repository `youtube-video-downloader` exists under the user's account
+    2. `master` branch is pushed to `origin` with code AND `.planning/` included
+    3. README.md and LICENSE (MIT) exist at repo root
+    4. `.github/workflows/ci.yml` exists and passes a smoke test on push
+    5. The user's GitHub token is stored as a GitHub Actions secret, never committed or logged
+
+**Plans**: 0 plans
 
 Plans:
 
